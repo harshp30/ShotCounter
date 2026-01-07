@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Basketball Shot Tracker</title>
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: clamp(12px, 3vw, 20px);
+      color: #fff;
+    }
+
+    .container {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 0;
+      max-width: 500px;
+      width: 100%;
+      padding: clamp(20px, 5vw, 32px);
+      min-height: 400px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #fff;
+      font-size: clamp(16px, 4vw, 18px);
+      margin-bottom: clamp(20px, 4vw, 28px);
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Idle View */
+    #idle-view, #summary-view, #history-view {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(12px, 3vw, 16px);
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    label {
+      font-weight: 400;
+      color: #666;
+      font-size: clamp(11px, 2.5vw, 12px);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    input[type="text"] {
+      padding: clamp(14px, 3.5vw, 16px);
+      border: 1px solid #222;
+      border-radius: 0;
+      font-size: clamp(15px, 4vw, 16px);
+      outline: none;
+      background: #000;
+      color: #fff;
+      font-family: inherit;
+    }
+
+    input[type="text"]:focus {
+      border-color: #444;
+    }
+
+    button {
+      padding: clamp(14px, 3.5vw, 16px);
+      font-size: clamp(13px, 3vw, 14px);
+      font-weight: 400;
+      border: 1px solid #222;
+      border-radius: 0;
+      cursor: pointer;
+      outline: none;
+      touch-action: manipulation;
+      user-select: none;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.15s;
+    }
+
+    button:active {
+      opacity: 0.6;
+    }
+
+    .btn-primary {
+      background: #fff;
+      color: #000;
+      border-color: #fff;
+    }
+
+    .btn-primary:active {
+      background: #ddd;
+    }
+
+    .btn-success {
+      background: #0f0;
+      color: #000;
+      border-color: #0f0;
+      font-size: clamp(16px, 4vw, 18px);
+      padding: clamp(24px, 6vw, 32px);
+      min-height: clamp(90px, 20vw, 110px);
+      font-weight: 400;
+    }
+
+    .btn-danger {
+      background: #f00;
+      color: #000;
+      border-color: #f00;
+      font-size: clamp(16px, 4vw, 18px);
+      padding: clamp(24px, 6vw, 32px);
+      min-height: clamp(90px, 20vw, 110px);
+      font-weight: 400;
+    }
+
+    .btn-secondary {
+      background: transparent;
+      color: #666;
+      border-color: #222;
+    }
+
+    .btn-secondary:active {
+      background: #111;
+    }
+
+    .btn-danger-outline {
+      background: transparent;
+      color: #f00;
+      border-color: #f00;
+    }
+
+    .btn-danger-outline:active {
+      background: #f00;
+      color: #000;
+    }
+
+    /* Active View */
+    #active-view {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(16px, 4vw, 20px);
+    }
+
+    .session-info {
+      background: transparent;
+      border: 1px solid #222;
+      padding: clamp(16px, 4vw, 20px);
+      border-radius: 0;
+      text-align: center;
+    }
+
+    .session-info h2 {
+      font-size: clamp(11px, 2.5vw, 12px);
+      color: #666;
+      margin-bottom: 6px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .session-info .location {
+      font-size: clamp(18px, 4.5vw, 20px);
+      font-weight: 400;
+      color: #fff;
+      margin-bottom: clamp(16px, 4vw, 20px);
+    }
+
+    .live-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: clamp(12px, 3vw, 16px);
+      margin-top: clamp(12px, 3vw, 16px);
+    }
+
+    .stat-box {
+      background: transparent;
+      padding: clamp(14px, 3.5vw, 16px);
+      border-radius: 0;
+      text-align: center;
+      border: 1px solid #222;
+    }
+
+    .stat-label {
+      font-size: clamp(10px, 2vw, 11px);
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .stat-value {
+      font-size: clamp(24px, 6vw, 28px);
+      font-weight: 400;
+      color: #fff;
+    }
+
+    .shot-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: clamp(12px, 3vw, 16px);
+      margin: clamp(16px, 4vw, 20px) 0;
+    }
+
+    /* Summary View */
+    .summary-header {
+      text-align: center;
+      margin-bottom: clamp(20px, 5vw, 28px);
+    }
+
+    .summary-header h2 {
+      font-size: clamp(12px, 3vw, 14px);
+      color: #666;
+      margin-bottom: 8px;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .summary-header .location {
+      font-size: clamp(16px, 4vw, 18px);
+      font-weight: 400;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .summary-header .date {
+      font-size: clamp(11px, 2.5vw, 12px);
+      color: #666;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: clamp(12px, 3vw, 16px);
+      margin-bottom: clamp(20px, 5vw, 28px);
+    }
+
+    .stats-grid .stat-box {
+      padding: clamp(16px, 4vw, 20px);
+    }
+
+    .big-stat {
+      grid-column: 1 / -1;
+      background: transparent;
+      color: white;
+      border: 2px solid #fff;
+      padding: clamp(24px, 6vw, 32px) !important;
+    }
+
+    .big-stat .stat-label {
+      color: #666;
+      font-size: clamp(11px, 2.5vw, 12px);
+    }
+
+    .big-stat .stat-value {
+      font-size: clamp(64px, 16vw, 80px);
+      color: white;
+      font-weight: 300;
+      line-height: 1;
+    }
+
+    .chart-container {
+      margin: clamp(20px, 5vw, 28px) 0;
+    }
+
+    .chart-title {
+      font-size: clamp(11px, 2.5vw, 12px);
+      font-weight: 400;
+      color: #666;
+      margin-bottom: 16px;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .chart-bar {
+      display: flex;
+      height: 4px;
+      border-radius: 0;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: #222;
+    }
+
+    .makes-bar, .misses-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: transparent;
+      font-weight: 400;
+      font-size: 0;
+      transition: all 0.3s;
+    }
+
+    .makes-bar {
+      background: #0f0;
+    }
+
+    .misses-bar {
+      background: #f00;
+    }
+
+    .chart-legend {
+      display: flex;
+      justify-content: space-between;
+      gap: clamp(16px, 4vw, 24px);
+      font-size: clamp(12px, 3vw, 13px);
+      border: 1px solid #222;
+      padding: clamp(12px, 3vw, 16px);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .legend-color {
+      width: 12px;
+      height: 12px;
+      border-radius: 0;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: clamp(10px, 2.5vw, 12px);
+      margin-top: clamp(20px, 5vw, 28px);
+    }
+
+    .action-buttons button {
+      flex: 1;
+    }
+
+    /* History View */
+    .history-header {
+      text-align: center;
+      margin-bottom: clamp(20px, 5vw, 24px);
+    }
+
+    .history-header h2 {
+      font-size: clamp(14px, 3.5vw, 16px);
+      color: #fff;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    .history-list {
+      max-height: 400px;
+      overflow-y: auto;
+      margin-bottom: clamp(16px, 4vw, 20px);
+    }
+
+    .history-item {
+      background: transparent;
+      padding: clamp(14px, 3.5vw, 16px);
+      border-radius: 0;
+      margin-bottom: clamp(10px, 2.5vw, 12px);
+      border: 1px solid #222;
+      transition: border-color 0.15s;
+    }
+
+    .history-item:active {
+      border-color: #444;
+    }
+
+    .history-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .history-item-location {
+      font-weight: 400;
+      color: #fff;
+      font-size: clamp(14px, 3.5vw, 15px);
+    }
+
+    .history-item-percentage {
+      font-weight: 400;
+      font-size: clamp(16px, 4vw, 18px);
+      color: #fff;
+    }
+
+    .history-item-details {
+      display: flex;
+      justify-content: space-between;
+      font-size: clamp(11px, 2.5vw, 12px);
+      color: #666;
+    }
+
+    .empty-history {
+      text-align: center;
+      padding: clamp(30px, 8vw, 40px) clamp(16px, 4vw, 20px);
+      color: #666;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      body {
+        padding: 12px;
+      }
+
+      .container {
+        padding: 20px;
+      }
+
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .big-stat {
+        grid-column: 1;
+      }
+    }
+
+    @media (min-width: 481px) and (max-width: 768px) {
+      .container {
+        padding: 28px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Shot Tracker</h1>
+
+    <!-- IDLE VIEW -->
+    <div id="idle-view">
+      <div class="input-group">
+        <label for="location-input">Where are you shooting from?</label>
+        <input
+          type="text"
+          id="location-input"
+          placeholder="e.g., Free throw line, 3-point corner..."
+          autocomplete="off"
+        >
+      </div>
+      <button class="btn-primary" id="start-btn">Start Session</button>
+      <button class="btn-secondary" id="view-history-btn">View History</button>
+    </div>
+
+    <!-- ACTIVE VIEW -->
+    <div id="active-view" class="hidden">
+      <div class="session-info">
+        <h2>Shooting From</h2>
+        <div class="location" id="current-location"></div>
+        <div class="live-stats">
+          <div class="stat-box">
+            <div class="stat-label">Total Shots</div>
+            <div class="stat-value" id="live-total">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-label">Percentage</div>
+            <div class="stat-value" id="live-percentage">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="shot-buttons">
+        <button class="btn-success" id="make-btn">MAKE</button>
+        <button class="btn-danger" id="miss-btn">MISS</button>
+      </div>
+
+      <button class="btn-secondary" id="end-btn">End Session</button>
+    </div>
+
+    <!-- SUMMARY VIEW -->
+    <div id="summary-view" class="hidden">
+      <div class="summary-header">
+        <h2>Complete</h2>
+        <div class="location" id="summary-location"></div>
+        <div class="date" id="summary-date"></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box big-stat">
+          <div class="stat-label">Accuracy</div>
+          <div class="stat-value" id="summary-percentage">0%</div>
+        </div>
+      </div>
+
+      <div class="chart-container">
+        <div class="chart-bar" id="chart-bar">
+          <div class="makes-bar" id="chart-makes" style="flex: 1"></div>
+          <div class="misses-bar" id="chart-misses" style="flex: 1"></div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item">
+            <div class="legend-color" style="background: #0f0;"></div>
+            <span id="legend-makes">0 makes (0%)</span>
+          </div>
+          <div class="legend-item">
+            <div class="legend-color" style="background: #f00;"></div>
+            <span id="legend-misses">0 misses (0%)</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">Total</div>
+          <div class="stat-value" id="summary-total">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Best Streak</div>
+          <div class="stat-value" id="summary-make-streak">0</div>
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <button class="btn-primary" id="new-session-btn">New Session</button>
+        <button class="btn-secondary" id="view-history-from-summary-btn">View History</button>
+      </div>
+    </div>
+
+    <!-- HISTORY VIEW -->
+    <div id="history-view" class="hidden">
+      <div class="history-header">
+        <h2>History</h2>
+      </div>
+      <div class="history-list" id="history-list">
+        <div class="empty-history">No sessions yet</div>
+      </div>
+      <div class="action-buttons">
+        <button class="btn-primary" id="back-from-history-btn">Back</button>
+        <button class="btn-danger-outline" id="clear-history-btn">Clear All</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ===== STATE MANAGEMENT =====
+    let currentState = 'idle';
+
+    function setState(newState) {
+      currentState = newState;
+      renderState();
+    }
+
+    function renderState() {
+      document.getElementById('idle-view').classList.add('hidden');
+      document.getElementById('active-view').classList.add('hidden');
+      document.getElementById('summary-view').classList.add('hidden');
+      document.getElementById('history-view').classList.add('hidden');
+
+      switch(currentState) {
+        case 'idle':
+          document.getElementById('idle-view').classList.remove('hidden');
+          break;
+        case 'active':
+          document.getElementById('active-view').classList.remove('hidden');
+          break;
+        case 'summary':
+          document.getElementById('summary-view').classList.remove('hidden');
+          break;
+        case 'history':
+          document.getElementById('history-view').classList.remove('hidden');
+          break;
+      }
+    }
+
+    // ===== LOCALSTORAGE FUNCTIONS =====
+    function saveToLocalStorage(key, data) {
+      try {
+        localStorage.setItem(key, JSON.stringify(data));
+        return true;
+      } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+          alert('Storage limit reached. Please clear old sessions.');
+        } else {
+          alert('Unable to save data. Please enable localStorage in your browser.');
+        }
+        return false;
+      }
+    }
+
+    function loadFromLocalStorage(key) {
+      try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+      } catch (e) {
+        console.error('Error loading from localStorage:', e);
+        return null;
+      }
+    }
+
+    function getCurrentSession() {
+      return loadFromLocalStorage('currentSession');
+    }
+
+    function getSessionHistory() {
+      return loadFromLocalStorage('sessionHistory') || [];
+    }
+
+    function addToHistory(session) {
+      const history = getSessionHistory();
+      history.unshift(session); // Add to beginning
+      saveToLocalStorage('sessionHistory', history);
+    }
+
+    // ===== SESSION MANAGEMENT =====
+    function startSession() {
+      const locationInput = document.getElementById('location-input');
+      const location = locationInput.value.trim();
+
+      if (!location) {
+        alert('Please enter a location!');
+        return;
+      }
+
+      const session = {
+        location: location,
+        startTime: Date.now(),
+        shots: []
+      };
+
+      saveToLocalStorage('currentSession', session);
+      locationInput.value = '';
+
+      setState('active');
+      updateActiveView();
+    }
+
+    function recordShot(shotType) {
+      const session = getCurrentSession();
+      if (!session) return;
+
+      const shot = {
+        type: shotType,
+        timestamp: Date.now()
+      };
+
+      session.shots.push(shot);
+      saveToLocalStorage('currentSession', session);
+      updateLiveStats();
+    }
+
+    function endSession() {
+      const session = getCurrentSession();
+      if (!session) return;
+
+      if (session.shots.length === 0) {
+        const shouldEnd = confirm('No shots recorded. End session anyway?');
+        if (!shouldEnd) return;
+      }
+
+      session.endTime = Date.now();
+      session.stats = calculateStats(session.shots);
+      session.id = `session_${session.startTime}`;
+
+      addToHistory(session);
+      localStorage.removeItem('currentSession');
+
+      setState('summary');
+      renderSummary(session);
+    }
+
+    // ===== STATISTICS CALCULATION =====
+    function calculateStats(shots) {
+      const totalShots = shots.length;
+      const makes = shots.filter(shot => shot.type === 'make').length;
+      const misses = shots.filter(shot => shot.type === 'miss').length;
+      const percentage = totalShots > 0 ? ((makes / totalShots) * 100).toFixed(1) : 0;
+
+      return {
+        totalShots,
+        makes,
+        misses,
+        percentage: parseFloat(percentage),
+        longestMakeStreak: findLongestStreak(shots, 'make'),
+        longestMissStreak: findLongestStreak(shots, 'miss')
+      };
+    }
+
+    function findLongestStreak(shots, type) {
+      let currentStreak = 0;
+      let longestStreak = 0;
+
+      shots.forEach(shot => {
+        if (shot.type === type) {
+          currentStreak++;
+          longestStreak = Math.max(longestStreak, currentStreak);
+        } else {
+          currentStreak = 0;
+        }
+      });
+
+      return longestStreak;
+    }
+
+    // ===== UI UPDATE FUNCTIONS =====
+    function updateActiveView() {
+      const session = getCurrentSession();
+      if (!session) return;
+
+      document.getElementById('current-location').textContent = session.location;
+      updateLiveStats();
+    }
+
+    function updateLiveStats() {
+      const session = getCurrentSession();
+      if (!session) return;
+
+      const stats = calculateStats(session.shots);
+
+      document.getElementById('live-total').textContent = stats.totalShots;
+      document.getElementById('live-percentage').textContent = stats.percentage + '%';
+    }
+
+    function renderSummary(session) {
+      const stats = session.stats;
+
+      document.getElementById('summary-location').textContent = session.location;
+      document.getElementById('summary-date').textContent = formatDate(session.endTime);
+
+      document.getElementById('summary-percentage').textContent = stats.percentage + '%';
+      document.getElementById('summary-total').textContent = stats.totalShots;
+      document.getElementById('summary-make-streak').textContent = stats.longestMakeStreak;
+
+      renderChart(stats.makes, stats.misses);
+    }
+
+    function renderChart(makes, misses) {
+      const total = makes + misses;
+
+      if (total === 0) {
+        document.getElementById('chart-makes').style.flex = '1';
+        document.getElementById('chart-misses').style.flex = '1';
+        document.getElementById('legend-makes').textContent = '0 makes (0%)';
+        document.getElementById('legend-misses').textContent = '0 misses (0%)';
+        return;
+      }
+
+      const makePercent = ((makes / total) * 100).toFixed(1);
+      const missPercent = ((misses / total) * 100).toFixed(1);
+
+      document.getElementById('chart-makes').style.flex = makes || 0.1;
+      document.getElementById('chart-misses').style.flex = misses || 0.1;
+
+      document.getElementById('legend-makes').textContent = `${makes} make${makes !== 1 ? 's' : ''} (${makePercent}%)`;
+      document.getElementById('legend-misses').textContent = `${misses} miss${misses !== 1 ? 'es' : ''} (${missPercent}%)`;
+    }
+
+    function renderHistory() {
+      const history = getSessionHistory();
+      const listElement = document.getElementById('history-list');
+
+      if (history.length === 0) {
+        listElement.innerHTML = '<div class="empty-history">No sessions yet</div>';
+        return;
+      }
+
+      listElement.innerHTML = history.map(session => {
+        const stats = session.stats;
+        return `
+          <div class="history-item">
+            <div class="history-item-header">
+              <div class="history-item-location">${session.location}</div>
+              <div class="history-item-percentage">${stats.percentage}%</div>
+            </div>
+            <div class="history-item-details">
+              <span>${formatDate(session.endTime)}</span>
+              <span>${stats.makes}/${stats.totalShots}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function clearHistory() {
+      const shouldClear = confirm('Clear all session history? This cannot be undone.');
+      if (shouldClear) {
+        localStorage.removeItem('sessionHistory');
+        renderHistory();
+      }
+    }
+
+    // ===== UTILITY FUNCTIONS =====
+    function formatDate(timestamp) {
+      const date = new Date(timestamp);
+      const options = {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      };
+      return date.toLocaleDateString('en-US', options);
+    }
+
+    // ===== EVENT LISTENERS =====
+    document.getElementById('start-btn').addEventListener('click', startSession);
+    document.getElementById('make-btn').addEventListener('click', () => recordShot('make'));
+    document.getElementById('miss-btn').addEventListener('click', () => recordShot('miss'));
+    document.getElementById('end-btn').addEventListener('click', endSession);
+    document.getElementById('new-session-btn').addEventListener('click', () => setState('idle'));
+    document.getElementById('view-history-btn').addEventListener('click', () => {
+      renderHistory();
+      setState('history');
+    });
+    document.getElementById('view-history-from-summary-btn').addEventListener('click', () => {
+      renderHistory();
+      setState('history');
+    });
+    document.getElementById('back-from-history-btn').addEventListener('click', () => setState('idle'));
+    document.getElementById('clear-history-btn').addEventListener('click', clearHistory);
+
+    // Allow Enter key to start session
+    document.getElementById('location-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        startSession();
+      }
+    });
+
+    // ===== INITIALIZATION =====
+    function init() {
+      const currentSession = getCurrentSession();
+
+      if (currentSession) {
+        const shouldContinue = confirm(
+          `You have an active session at "${currentSession.location}". Continue?`
+        );
+
+        if (shouldContinue) {
+          setState('active');
+          updateActiveView();
+        } else {
+          localStorage.removeItem('currentSession');
+          setState('idle');
+        }
+      } else {
+        setState('idle');
+      }
+    }
+
+    // Start the app
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
